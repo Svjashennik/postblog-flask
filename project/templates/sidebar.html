@@ -1,0 +1,11 @@
+{% block sidebar %}
+
+    <div class="col-md-3 float-right ">
+        <div class="card my-4">
+            <div class="card-body">
+                <a href="{{ url_for('main.pagination',page=current_page) }}?lang={{ lang | urlencode }}" class="btn btn-danger">Перевести</a>
+            </div>
+        </div>
+    </div>
+
+{% endblock sidebar %}

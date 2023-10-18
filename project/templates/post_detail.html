@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="container">
+        <div class="row">
+            <div class="card border-dark  card mb-15 my-10 mt-1" style="width: 90%;">
+				<h1 class="card-header border-success">{{ post.title }}</h1>
+				<img class="card-img-top" style="border:25px" src="https://k-a-r-t-i-n-a.ru/wp-content/uploads/2015/08/ajvazovskij-ivan-raduga.jpg">
+                <div class="card-body text-dark">
+                    <p class="card-text ">{{ post.body | safe }}</p>
+                </div>
+				<p class="card-footer bg-transparent"><small class=" text-muted">{{ post.author }} | {{ post.created_on }}</small></p>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}
+        <title>Вход</title>
+		<link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+        <meta name="google" content="notranslate" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+            integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
+{% endblock %}
+{% block content %}
+    <div>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="notification is-danger">
+                {{ messages[0] }}
+            </div>
+        {% endif %}
+    {% endwith %}
+	<form method="post" action="{{ url_for('auth.login_post') }}">
+	  <div class="container">
+		<label for="uname"><b>Логин</b></label>
+		<input type="text" placeholder="Ввведите логин" name="name" required>
+
+		<label for="psw"><b>Пароль</b></label>
+		<input type="password" placeholder="Введите пароль" name="password" required>
+          <div class="field">
+                <label class="checkbox">
+                    <input type="checkbox">
+                    Запомнить меня
+                </label>
+          </div>
+		<button type="submit" value="login">Войти</button>
+	  </div>
+	</form>
+    </div>
+{% endblock %}
