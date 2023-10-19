@@ -1,3 +1,6 @@
+import time
+
+from deep_translator import GoogleTranslator
 from flask import (
     Flask,
     send_from_directory,
@@ -8,10 +11,12 @@ from flask import (
     logging,
     flash,
     redirect,
-    Blueprint,
+    Blueprint, Response,
 )
 from flask_login import login_user, LoginManager, UserMixin
+from sqlalchemy import func
 from werkzeug.security import check_password_hash, generate_password_hash
+from .fixtures import fixtures
 
 from flask_sqlalchemy import SQLAlchemy
 
@@ -24,7 +29,15 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)  # primary keys are required by SQLAlchemy
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
-    name = db.Column(db.String(1000))
+    name = db.Column(db.String(100), unique=True)
+    posts = db.relationship('Post', backref='author', lazy=True)
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255))
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
+    body = db.Column(db.String(5000))
+    created_on = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
 
 @app.route("/static/<path:filename>")
@@ -39,25 +52,33 @@ main = Blueprint('main', __name__)
 def about():
     return render_template('about.html')
 
+@main.route('/fixtures')
+def fixtures_fill():
+    for d in fixtures:
+        post = Post(title=d['title'],author_id=1,body=d['body'])
+        db.session.add(post)
+    db.session.commit()
+    return Response("Created", status=201, mimetype='application/json')
 
 @main.route('/')
 def articles():
-    return render_template('main.html')
-
-
-@main.route('/pagination')
-def pagination(page):
-    return render_template('main.html')
+    page = request.args.get('page', 1, type=int)
+    lang = request.args.get('lang', 'ru', type=str)
+    posts = Post.query.order_by(Post.title.desc()).paginate(page=page, per_page=2)
+    if lang == 'en':
+        blog_translate = GoogleTranslator(source='ru', target='en')
+        for post in posts.items:
+            post.body = blog_translate.translate(post.body)
+            post.title = blog_translate.translate(post.title)
+            time.sleep(0.5)
+    lang = 'ru' if lang=='en' else 'en'
+    return render_template('main.html', posts=posts, lang=lang)
 
 
 @main.route('/blog/<blog>')
-def article():
-    return render_template('post_detail.html')
-
-
-@main.route('/main/<string:id>/')
-def display_article(id):
-    return render_template('post_detail.html', id=id)
+def article(blog):
+    post = Post.query.filter_by(id=blog).first()
+    return render_template('post_detail.html', post=post)
 
 
 auth = Blueprint('auth', __name__)
