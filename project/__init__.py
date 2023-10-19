@@ -272,7 +272,8 @@ def prediction_main():
 
 @prediction.route('/booklist', methods=['GET','POST'])
 def show_books_tbl():
-    books = Book_tbl.query.all()[:30:1]
+    page = request.args.get('page', 1, type=int)
+    books = Book_tbl.query.paginate(page=page, per_page=100)
     return render_template('booklist.html', books=books)
 
 @prediction.route('/prediction_list', methods=['GET','POST'])

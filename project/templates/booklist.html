@@ -84,3 +84,21 @@
         }
 </style>
 {% endblock content %}
+
+{% block pagination %}
+    <center>
+<div class="pagination center">
+ <span class="step-links">
+  {% if books.page != 1 %}
+	  <a class='btn btn-secondary' href="{{ url_for('prediction.show_books_tbl' , page=books.prev_num) }}">&laquo; Предыдщая   </a>
+  {% endif %}
+    <span class="current">
+  Страница   {{ books.page }} из {{ books.pages }}
+    </span>
+  {% if books.page!=books.pages %}
+		<a class='btn btn-secondary' href="{{ url_for('prediction.show_books_tbl' , page=books.next_num) }}">     Следующая &raquo;</a>
+  {% endif %}
+  </span>
+</div>
+    </center>
+{% endblock %}
