@@ -86,7 +86,7 @@ def login_post():
 
     # if the above check passes, then we know the user has the right credentials
     login_user(user, remember=remember)
-    return redirect(url_for('main.articles'))
+    return redirect(url_for('main.about'))
 
 
 @auth.route('/registration')
@@ -131,42 +131,60 @@ def index():
 
 
 @app.route("/login_dialog")
-def login_modal():
+def login_dialog():
     hash = generate_password_hash('skillchen')
     check_hash = check_password_hash(hash, 'skillchen')
     return render_template("login_dialog.html", hash=hash, check_hash=check_hash)
 
 @app.route("/login_modal", methods=["POST", "GET"])
-def action():
+def login_modal():
     # cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    msg = 'Не удалось выполнить вход'
+    msg = 'парам пам'
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        print(username)
-        print(password)
-        # cur.execute("SELECT * FROM admin_login WHERE admin_name = %s", [username, ])
-        # total_row = cur.rowcount
+        user = User.query.filter_by(name=username).first()
+        if not user or not check_password_hash(user.password, password):
+            msg = 'Не удалось выполнить вход'
+        else:
+            session['logged_in'] = True
+            session['username'] = username
+            msg = 'Вход выполнен'
+    return jsonify(msg)
 
-        # if total_row > 0:
-        #     data = cur.fetchone()
-        #     rs_password = data['admin_password']
-        #     print(rs_password)
-        #     if check_password_hash(rs_password, password):
-        #         session['logged_in'] = True
-        #         session['username'] = username
-        #         msg = 'success'
-        #     else:
-        #         msg = 'No-data'
-        # else:
-        #     msg = 'No-data'
+@app.route("/registration_modal", methods=["POST"])
+def registration_modal():
+    # cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    msg = 'парам пам'
+    if request.method == 'POST':
+        email = request.form['email']
+        username = request.form['username']
+        password = request.form['password']
+        password2 = request.form['password2']
+        if password2 != password:
+            return jsonify(msg)
+
+        user = User.query.filter_by(name=username).first()
+        user2 = User.query.filter_by(email=email).first()
+        if user:
+            msg = 'Логин уже зарегистрирован'
+        elif user2:
+            msg = 'Почта уже зарегистрирована'
+        else:
+            new_user = User(email=email, name=username, password=generate_password_hash(password, method='sha256'))
+            db.session.add(new_user)
+            db.session.commit()
+            session['logged_in'] = True
+            session['username'] = username
+            msg = 'Регистрация и вход выполнены'
+
     return jsonify(msg)
 
 
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect('/')
+    return redirect('/login_dialog')
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'

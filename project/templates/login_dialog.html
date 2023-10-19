@@ -8,24 +8,36 @@
 </head>
 <body>
     <div class="container mt-3">
-       <h4>
+       <h1>
           <strong>Авторизация</strong>
-        </h4>
-        <br/>
-        <br/>
+        </h1>
         {% if session.logged_in %} 
-        <div align="center">
-            <h3>Текущий пользователь: {{ session.username }}</h3><br/>
+        <div align="left">
+            <h4>Текущий пользователь: {{ session.username }}</h4><br/>
 {#            <a href="/logout">Выйти</a>#}
-             <a href="/logout" id="logout-btn" class="btn btn-danger" role="button">Выйти</a>
+             <a href="/logout" id="logout-btn" class="btn btn-danger  btn-lg" role="button">Выйти</a>
+            <br/>
+            <br/>
         </div>
         {% endif %}
+
         <div align="left">
             <a data-target="#myModal" role="button" class="btn btn-success btn-lg" background-color = "#8064A2" data-toggle="modal" >
                 <span > Войти </span>
             </a>
         </div>
+
+        <h1>
+          <strong>Регистрация</strong>
+        </h1>
+        <div align="left">
+            <a data-target="#myModal_reg" role="button" class="btn btn-success btn-lg" background-color = "#8064A2" data-toggle="modal" >
+                <span > Зарегистрироваться </span>
+            </a>
+        </div>
     </div>
+
+{#    Окно Авторизации#}
     <div id="myModal" class="modal fade">
         <div class="modal-dialog">
             <!-- Modal content -->
@@ -47,7 +59,36 @@
         </div>
     </div>
 
+{#    Окно Регистрации#}
+    <div id="myModal_reg" class="modal fade">
+        <div class="modal-dialog">
+            <!-- Modal content -->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" text-align= "right">X</button>
+                    <h4 class="modal-title" text-align= "left"></h4>
+                </div>
+                <div class="modal-body">
+                    <label>Почта</label>
+                    <input type="text" name="email1" id="email1" class="form-control"/>
+                    <br/>
+                    <label>Логин</label>
+                    <input type="text" name="username1" id="username1" class="form-control"/>
+                    <br/>
+                    <label>Пароль</label>
+                    <input type="password" name="password1" id="password1" class="form-control">
+                    <br/>
+                    <label>Повторите пароль</label>
+                    <input type="password" name="password21" id="password21" class="form-control">
+                    <br/>
+                    <button type="button" name="signup-button" id="signup-button" class="btn btn-primary btn-lg">Зарегистрироваться</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!--Script Area-->
+{#    Для авторизации#}
     <script>
         $(document).ready(function(){
             $("#login-button").click(function(){
@@ -75,6 +116,42 @@
                 } else {
                     var a = 1
                     {#alert("Поля не заполнены!")#}
+                }
+
+            });
+        });
+    </script>
+
+{#    Для регистрации#}
+    <script>
+        $(document).ready(function(){
+            $("#signup-button").click(function(){
+                var email = $('#email1').val();
+                var username = $('#username1').val();
+                var password = $('#password1').val();
+                var password2 = $('#password21').val();
+                if (username != "" && password != "" && email != "" && password2 != "")
+                {
+                    $.ajax({
+                        url: "/registration_modal",
+                        method: "POST",
+                        data: {email:email, username:username, password:password, password2:password2},
+                        success: function(data){
+                            alert(data);
+                            if (data == 'No-data') {
+                                var a = 1
+                                {#alert("Invalid Account or Password!!")#}
+                            }
+                            else
+                            {
+                                $('#RegModal').hide();
+                                location.reload();
+                            }
+                        }
+                    })
+                } else {
+                    var a = 1
+                    alert("Поля не заполнены!")
                 }
 
             });
