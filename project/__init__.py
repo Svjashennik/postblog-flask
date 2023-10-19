@@ -1,5 +1,8 @@
+import pickle
 import time
 
+import flask_login
+import pandas as pd
 from deep_translator import GoogleTranslator
 from flask import (
     Flask,
@@ -32,6 +35,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(100))
     name = db.Column(db.String(100), unique=True)
     posts = db.relationship('Post', backref='author', lazy=True)
+    predict = db.relationship('Prediction_tbl', backref='author', lazy=True)
 
 
 class Post(db.Model):
@@ -41,7 +45,7 @@ class Post(db.Model):
     body = db.Column(db.String(5000))
     created_on = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
-class Book_tbl(models.Model):
+class Book_tbl(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     Edition = db.Column(db.String(255))
     Reviews = db.Column(db.Float)
@@ -49,9 +53,9 @@ class Book_tbl(models.Model):
     Edition_Year = db.Column(db.Integer)
     Price = db.Column(db.Float)
 
-class Prediction_tbl(models.Model):
+class Prediction_tbl(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    author = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
     created_on = db.Column(db.DateTime(timezone=True), server_default=func.now())
     Edition = db.Column(db.String(255))
     Reviews = db.Column(db.Float)
@@ -227,9 +231,10 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.init_app(app)
 
+prediction = Blueprint('prediction', __name__)
 
 def getPrediction(Edition, Reviews, Ratings, Edition_Year):
-    model = pickle.load(open('model_grb.pkl', 'rb'))
+    model = pickle.load(open('project/model_grb.pkl', 'rb'))
     # scaled = pickle.load(open('scaler.pkl', 'rb'))
     # transform = scaled.transform([[pclass, sex, age, sibsp, parch, fare, C, Q, S]])
     dict_edit_rus = {"Твердый": 1, "Мягкий": 2, "Спиральный": 3, "Другой": 4}
@@ -244,38 +249,47 @@ def getPrediction(Edition, Reviews, Ratings, Edition_Year):
 
 
 def save_predict(Edition, Reviews, Ratings, Edition_Year, Price, user):
-    dict_edit_rus = {"Твердый": 1, "Мягкий": 2, "Спиральный": 3, "Другой": 4}
-    pred = Prediction_tbl(author=user, Edition=Edition, Reviews=Reviews, Ratings=Ratings, Edition_Year=Edition_Year, Price=Price))
+    pred = Prediction_tbl(author_id=user, Edition=Edition, Reviews=Reviews, Ratings=Ratings, Edition_Year=Edition_Year, Price=Price)
     db.session.add(pred)
     db.session.commit()
 
 @prediction.route('/result', methods=['POST'])
-def post_result(request):
-    Edition = str(request.GET['edition'])
-    Reviews = float(request.GET['reviews'])
-    Ratings = int(request.GET['ratings'])
-    Edition_Year = int(request.GET['year'])
+def post_result():
+    Edition = str(request.form['edition'])
+    Reviews = float(request.form['reviews'])
+    Ratings = int(request.form['ratings'])
+    Edition_Year = int(request.form['year'])
 
     result_price = getPrediction(Edition, Reviews, Ratings, Edition_Year)
-    save_predict(Edition, Reviews, Ratings, Edition_Year, round(result_price, 1), request.user)
-    books = Prediction_tbl.objects.all().order_by('-created_on')[:30:1]
-    return render(request, 'prediction_list.html', {'books': books})
+    save_predict(Edition, Reviews, Ratings, Edition_Year, round(result_price, 1), 1)
+    books = Prediction_tbl.query.all()[:30:1]
+    return render_template('prediction_list.html', books=books)
 
-@prediction.route('/prediction', methods=['POST'])
-def post_prediction(request):
+@prediction.route('/prediction')
+def prediction_main():
     template_name = 'prediction.html'
-    return render(request, template_name)
+    return render_template(template_name)
 
-@prediction.route('/booklist', methods=['POST'])
-def show_books_tbl(request):
-    books = Book_tbl.objects.all()[:30:1]
-    return render(request, 'booklist.html', {'books': books})
+@prediction.route('/booklist', methods=['GET','POST'])
+def show_books_tbl():
+    books = Book_tbl.query.all()[:30:1]
+    return render_template('booklist.html', books=books)
 
-@prediction.route('/prediction_list', methods=['POST'])
-def show_prediction_tbl(request):
-    books = Prediction_tbl.objects.all().order_by('-created_on')[:30:1]
-    return render(request, 'prediction_list.html', {'books': books})
+@prediction.route('/prediction_list', methods=['GET','POST'])
+def show_prediction_tbl():
+    books = Prediction_tbl.query.order_by(Prediction_tbl.created_on.desc()).all()[:30:1]
+    return render_template('prediction_list.html', books=books)
 
+@prediction.route('/fixtures_books')
+def fixtures_fill_books():
+    df = pd.read_csv("project/books_data.csv")
+    df = df.reset_index()
+    for index, row in df.iterrows():
+        if index > 2:
+            pred = Book_tbl(id=index, Edition=row['Edition'], Reviews=row['Reviews'], Ratings=row['Ratings'], Price=row['Price'])
+            db.session.add(pred)
+            db.session.commit()
+    return Response("Created", status=201, mimetype='application/json')
 
 @login_manager.user_loader
 def load_user(user_id):

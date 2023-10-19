@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load static %}
 
 {% block content %}
 
@@ -19,7 +18,7 @@
     <tbody>
         {% for book in books %}
         <tr>
-            <td>{{ book.author }}</td>
+            <td>{{ book.author.name }}</td>
             <td>{{ book.created_on }}</td>
             <td>{{ book.Edition }}</td>
             <td>{{ book.Reviews }}</td>
