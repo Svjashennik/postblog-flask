@@ -39,6 +39,24 @@ class Post(db.Model):
     body = db.Column(db.String(5000))
     created_on = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
+class Book_tbl(models.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    Edition = db.Column(db.String(255))
+    Reviews = db.Column(db.Float)
+    Ratings = db.Column(db.Integer)
+    Edition_Year = db.Column(db.Integer)
+    Price = db.Column(db.Float)
+
+class Prediction_tbl(models.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    author = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
+    created_on = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    Edition = db.Column(db.String(255))
+    Reviews = db.Column(db.Float)
+    Ratings = db.Column(db.Integer)
+    Edition_Year = db.Column(db.Integer)
+    Price = db.Column(db.Float)
+
 
 @app.route("/static/<path:filename>")
 def staticfiles(filename):
@@ -147,6 +165,55 @@ login_manager.login_view = 'auth.login'
 login_manager.init_app(app)
 
 
+def getPrediction(Edition, Reviews, Ratings, Edition_Year):
+    model = pickle.load(open('model_grb.pkl', 'rb'))
+    # scaled = pickle.load(open('scaler.pkl', 'rb'))
+    # transform = scaled.transform([[pclass, sex, age, sibsp, parch, fare, C, Q, S]])
+    dict_edit_rus = {"Твердый": 1, "Мягкий": 2, "Спиральный": 3, "Другой": 4}
+    if Edition not in dict_edit_rus:
+        Edition = "Другой"
+    Edition = dict_edit_rus[Edition]
+    transform = pd.DataFrame(
+        [[Edition, Reviews, Ratings, Edition_Year]], columns=['Edition', 'Reviews', 'Ratings', 'Edition_Year']
+    )
+    prediction = model.predict(transform)
+    return prediction[0]
+
+
+def save_predict(Edition, Reviews, Ratings, Edition_Year, Price, user):
+    dict_edit_rus = {"Твердый": 1, "Мягкий": 2, "Спиральный": 3, "Другой": 4}
+    pred = Prediction_tbl(author=user, Edition=Edition, Reviews=Reviews, Ratings=Ratings, Edition_Year=Edition_Year, Price=Price))
+    db.session.add(pred)
+    db.session.commit()
+
+@prediction.route('/result', methods=['POST'])
+def post_result(request):
+    Edition = str(request.GET['edition'])
+    Reviews = float(request.GET['reviews'])
+    Ratings = int(request.GET['ratings'])
+    Edition_Year = int(request.GET['year'])
+
+    result_price = getPrediction(Edition, Reviews, Ratings, Edition_Year)
+    save_predict(Edition, Reviews, Ratings, Edition_Year, round(result_price, 1), request.user)
+    books = Prediction_tbl.objects.all().order_by('-created_on')[:30:1]
+    return render(request, 'prediction_list.html', {'books': books})
+
+@prediction.route('/prediction', methods=['POST'])
+def post_prediction(request):
+    template_name = 'prediction.html'
+    return render(request, template_name)
+
+@prediction.route('/booklist', methods=['POST'])
+def show_books_tbl(request):
+    books = Book_tbl.objects.all()[:30:1]
+    return render(request, 'booklist.html', {'books': books})
+
+@prediction.route('/prediction_list', methods=['POST'])
+def show_prediction_tbl(request):
+    books = Prediction_tbl.objects.all().order_by('-created_on')[:30:1]
+    return render(request, 'prediction_list.html', {'books': books})
+
+
 @login_manager.user_loader
 def load_user(user_id):
     # since the user_id is just the primary key of our user table, use it in the query for the user
@@ -157,3 +224,4 @@ def load_user(user_id):
 
 app.register_blueprint(auth)
 app.register_blueprint(main)
+app.register_blueprint(prediction)

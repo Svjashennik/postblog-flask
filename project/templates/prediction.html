@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+  <body>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+            integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
+        <link href="{% static "admin/css/login.css" %}" rel="stylesheet">
+
+    <form action="{% url 'result' %}">
+      {% csrf_token %}
+
+    <div class="container">
+        <h1 style="color:#478448">Предсказание стоимости книги</h1>
+      <p>Издание (тип переплета):</p>
+      <input type="text" name="edition">
+      <br>
+
+      <p>Отзывы:</p>
+      <input type="text" name="reviews">
+      <br>
+
+      <p>Рейтинги:</p>
+      <input type="text" name="ratings">
+      <br>
+
+      <p>Год издания:</p>
+      <input type="text" name="year">
+      <br>
+
+      <button type="submit" value="Predict">Предсказать стоимость</button>
+    </div>
+    </form>
+
+    <form method="post" action="{% url 'booklist' %}">
+	  {% csrf_token %}
+	  <div class="container">
+		<button type="submit" value="book_list">Начальный набор данных</button>
+	  </div>
+	</form>
+    <form method="post" action="{% url 'prediction_list' %}">
+	  {% csrf_token %}
+	  <div class="container">
+		<button type="submit" value="prediction_list">История предсказаий</button>
+	  </div>
+	</form>
+    <form method="post" action="{% url 'learn_model' %}">
+	  {% csrf_token %}
+	  <div class="container">
+		<button type="submit" value="learn_model">Обучить модель!</button>
+	  </div>
+	</form>
+
+  </body>
+</html>
+
+<style>
+/* Bordered form */
+
+/* Full-width inputs */
+input[type=text], input[type=password] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+/* Set a style for all buttons */
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+}
+
+/* Add a hover effect for buttons */
+button:hover {
+    opacity: 0.8;
+}
+
+
+/* Add padding to containers */
+.container {
+  padding: 0 15px;
+}
+
+@media (min-width: 375.98px){
+  .container {
+    max-width: 340px;
+    margin: auto;
+    padding: 0;
+  }
+}
+
+@media (min-width: 467.98px){
+  .container {
+    max-width: 420px;
+  }
+}
+
+@media (min-width: 691.98px) {
+  .container {
+    max-width: 360px;
+  }
+}
+
+@media (min-width: 799.98px){
+  .container {
+    max-width: 740px;
+  }
+}
+</style>
+{% endblock content %}
