@@ -9,6 +9,7 @@ from flask import (
     flash,
     redirect,
     Blueprint,
+    jsonify,
 )
 from flask_login import login_user, LoginManager, UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -18,6 +19,7 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.config.from_object("project.config.Config")
 db = SQLAlchemy(app)
+# db.create_all()
 
 
 class User(UserMixin, db.Model):
@@ -120,6 +122,51 @@ def signup_post():
 
     return redirect(url_for('auth.login'))
 
+
+@app.route('/')
+def index():
+    hash = generate_password_hash('cairocoders')
+    check_hash = check_password_hash(hash, 'cairocoders')
+    return render_template('index.html', hash=hash, check_hash=check_hash)
+
+
+@app.route("/login_dialog")
+def login_modal():
+    hash = generate_password_hash('skillchen')
+    check_hash = check_password_hash(hash, 'skillchen')
+    return render_template("login_dialog.html", hash=hash, check_hash=check_hash)
+
+@app.route("/login_modal", methods=["POST", "GET"])
+def action():
+    # cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    msg = 'Не удалось выполнить вход'
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        print(username)
+        print(password)
+        # cur.execute("SELECT * FROM admin_login WHERE admin_name = %s", [username, ])
+        # total_row = cur.rowcount
+
+        # if total_row > 0:
+        #     data = cur.fetchone()
+        #     rs_password = data['admin_password']
+        #     print(rs_password)
+        #     if check_password_hash(rs_password, password):
+        #         session['logged_in'] = True
+        #         session['username'] = username
+        #         msg = 'success'
+        #     else:
+        #         msg = 'No-data'
+        # else:
+        #     msg = 'No-data'
+    return jsonify(msg)
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/')
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'

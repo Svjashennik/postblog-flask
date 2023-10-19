@@ -1,0 +1,85 @@
+{% extends 'base_new.html' %}
+{% block content %}
+
+<head>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container mt-3">
+       <h4>
+          <strong>Авторизация</strong>
+        </h4>
+        <br/>
+        <br/>
+        {% if session.logged_in %} 
+        <div align="center">
+            <h3>Текущий пользователь: {{ session.username }}</h3><br/>
+{#            <a href="/logout">Выйти</a>#}
+             <a href="/logout" id="logout-btn" class="btn btn-danger" role="button">Выйти</a>
+        </div>
+        {% endif %}
+        <div align="left">
+            <a data-target="#myModal" role="button" class="btn btn-success btn-lg" background-color = "#8064A2" data-toggle="modal" >
+                <span > Войти </span>
+            </a>
+        </div>
+    </div>
+    <div id="myModal" class="modal fade">
+        <div class="modal-dialog">
+            <!-- Modal content -->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" text-align= "right">X</button>
+                    <h4 class="modal-title" text-align= "left"></h4>
+                </div>
+                <div class="modal-body">
+                    <label>Логин</label>
+                    <input type="text" name="username" id="username" class="form-control"/>
+                    <br/>
+                    <label>Пароль</label>
+                    <input type="password" name="password" id="password" class="form-control">
+                    <br/>
+                    <button type="button" name="login-button" id="login-button" class="btn btn-primary btn-lg">Войти</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--Script Area-->
+    <script>
+        $(document).ready(function(){
+            $("#login-button").click(function(){
+                var username = $('#username').val();
+                var password = $('#password').val();
+                if (username != "" && password != "")
+                {
+                    $.ajax({
+                        url: "/login_modal",
+                        method: "POST",
+                        data: {username:username, password:password},
+                        success: function(data){
+                            alert(data);
+                            if (data == 'No-data') {
+                                var a = 1
+                                {#alert("Invalid Account or Password!!")#}
+                            }
+                            else
+                            {
+                                $('#loginModal').hide();
+                                location.reload();
+                            }
+                        }
+                    })
+                } else {
+                    var a = 1
+                    {#alert("Поля не заполнены!")#}
+                }
+
+            });
+        });
+    </script>
+
+
+{% endblock content %}
