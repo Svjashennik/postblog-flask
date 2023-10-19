@@ -8,10 +8,11 @@ from flask import (
     request,
     url_for,
     session,
-    logging,
     flash,
     redirect,
-    Blueprint, Response,
+    Blueprint,
+    Response,
+    jsonify,
 )
 from flask_login import login_user, LoginManager, UserMixin
 from sqlalchemy import func
@@ -32,10 +33,11 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(100), unique=True)
     posts = db.relationship('Post', backref='author', lazy=True)
 
+
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255))
-    author_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     body = db.Column(db.String(5000))
     created_on = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
@@ -52,13 +54,15 @@ main = Blueprint('main', __name__)
 def about():
     return render_template('about.html')
 
+
 @main.route('/fixtures')
 def fixtures_fill():
     for d in fixtures:
-        post = Post(title=d['title'],author_id=1,body=d['body'])
+        post = Post(title=d['title'], author_id=1, body=d['body'])
         db.session.add(post)
     db.session.commit()
     return Response("Created", status=201, mimetype='application/json')
+
 
 @main.route('/')
 def articles():
@@ -71,7 +75,7 @@ def articles():
             post.body = blog_translate.translate(post.body)
             post.title = blog_translate.translate(post.title)
             time.sleep(0.5)
-    lang = 'ru' if lang=='en' else 'en'
+    lang = 'ru' if lang == 'en' else 'en'
     return render_template('main.html', posts=posts, lang=lang)
 
 
@@ -140,6 +144,65 @@ def signup_post():
     db.session.commit()
 
     return redirect(url_for('auth.login'))
+
+
+@app.route("/login_dialog")
+def login_dialog():
+    hash = generate_password_hash('skillchen')
+    check_hash = check_password_hash(hash, 'skillchen')
+    return render_template("login_dialog.html", hash=hash, check_hash=check_hash)
+
+
+@app.route("/login_modal", methods=["POST", "GET"])
+def login_modal():
+    msg = ''
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(name=username).first()
+        if not user or not check_password_hash(user.password, password):
+            msg = 'Не удалось выполнить вход'
+        else:
+            session['logged_in'] = True
+            session['username'] = username
+            msg = 'Вход выполнен'
+    return jsonify(msg)
+
+
+@app.route("/registration_modal", methods=["POST"])
+def registration_modal():
+    msg = ''
+    if request.method == 'POST':
+        email = request.form['email']
+        username = request.form['username']
+        password = request.form['password']
+        password2 = request.form['password2']
+        if password2 != password:
+            return jsonify(msg)
+
+        user = User.query.filter_by(name=username).first()
+        user2 = User.query.filter_by(email=email).first()
+        if user:
+            msg = 'Логин уже зарегистрирован'
+        elif user2:
+            msg = 'Почта уже зарегистрирована'
+        else:
+            new_user = User(
+                email=email, name=username, password=generate_password_hash(password, method='sha256')
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            session['logged_in'] = True
+            session['username'] = username
+            msg = 'Регистрация и вход выполнены'
+
+    return jsonify(msg)
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login_dialog')
 
 
 login_manager = LoginManager()
